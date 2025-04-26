@@ -76,7 +76,7 @@ class GeoPredictor:
         metadata = {
             "region": region["name"],
             "confidence": confidence,
-            "predicted_class": int(predicted_class)
+            "predicted_class": int(region_idx)
         }
         
         return region["center"], metadata

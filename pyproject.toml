@@ -10,5 +10,12 @@ dependencies = [
     "numpy",
     "requests",
     "typer",
-    "rich"
+    "rich",
+    "pytest"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov"
 ]

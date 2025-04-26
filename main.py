@@ -17,7 +17,7 @@ console = Console()
 
 
 @app.command()
-def main(image_path: Path = typer.Argument(..., help="Path to the image file", exists=True),
+def main(image_path: Path = typer.Argument(..., help="Path to the image file"),
         use_exif: bool = typer.Option(False, "--use-exif", "-e", help="Use EXIF data to verify prediction")):
     """Predict the geolocation of an image."""
     try:
