@@ -1,13 +1,11 @@
 from pathlib import Path
 from typing import Dict, Any, Tuple, List, Optional
 import os
+import random
 
 import numpy as np
-import tensorflow as tf
-from transformers import TFViTForImageClassification, ViTImageProcessor
-
-# Ensure TensorFlow can see the Metal plugin
-os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+import torch
+from transformers import ViTForImageClassification, ViTImageProcessor
 
 
 class GeoPredictor:
@@ -41,7 +39,7 @@ class GeoPredictor:
             # for geolocation. For now, we'll use a standard image classifier
             # and later map its outputs to geographic regions
             self.processor = ViTImageProcessor.from_pretrained(self.model_name)
-            self.model = TFViTForImageClassification.from_pretrained(self.model_name)
+            self.model = ViTForImageClassification.from_pretrained(self.model_name)
             self.is_loaded = True
         except Exception as e:
             raise ValueError(f"Failed to load model: {str(e)}")
@@ -66,21 +64,25 @@ class GeoPredictor:
         # and returns the center of that region
         
         # Process image for the model
-        inputs = self.processor(images=image_array, return_tensors="tf")
+        inputs = self.processor(images=image_array, return_tensors="pt")
+        
+        # Set model to evaluation mode
+        self.model.eval()
         
         # Get model prediction
-        outputs = self.model(**inputs)
-        logits = outputs.logits
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            logits = outputs.logits
         
         # Get predicted class
-        predicted_class = tf.argmax(logits, axis=1).numpy()[0]
+        predicted_class = torch.argmax(logits, dim=1).item()
         
         # Map to one of our predefined regions (using modulo for now)
         region_idx = predicted_class % len(self.regions)
         region = self.regions[region_idx]
         
         # Extract confidence scores
-        probs = tf.nn.softmax(logits, axis=1).numpy()[0]
+        probs = torch.nn.functional.softmax(logits, dim=1).squeeze().numpy()
         confidence = float(probs[predicted_class])
         
         # Return predicted coordinates and metadata
