@@ -17,9 +17,8 @@ console = Console()
 
 
 @app.command()
-def predict(image_path: Path = typer.Argument(..., help="Path to the image file", exists=True),
-           use_exif: bool = typer.Option(False, "--use-exif", "-e", help="Use EXIF data to verify prediction"),
-           model_name: str = typer.Option("google/vit-base-patch16-224", "--model", "-m", help="Model name or path")):
+def main(image_path: Path = typer.Argument(..., help="Path to the image file", exists=True),
+        use_exif: bool = typer.Option(False, "--use-exif", "-e", help="Use EXIF data to verify prediction")):
     """Predict the geolocation of an image."""
     try:
         rprint(f"[bold green]Processing image:[/bold green] {image_path}")
@@ -27,7 +26,7 @@ def predict(image_path: Path = typer.Argument(..., help="Path to the image file"
         
         # Initialize components
         image_processor = ImageProcessor()
-        geo_predictor = GeoPredictor(model_name=model_name)
+        geo_predictor = GeoPredictor()
         geocoder = Geocoder()
         
         # Process image
@@ -99,9 +98,5 @@ def predict(image_path: Path = typer.Argument(..., help="Path to the image file"
         raise typer.Exit(code=1)
 
 
-def main():
-    app()
-
-
 if __name__ == "__main__":
-    main()
+    app()

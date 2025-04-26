@@ -5,22 +5,19 @@ import random
 
 import numpy as np
 import torch
-from transformers import ViTForImageClassification, ViTImageProcessor
+from PIL import Image
 
 
 class GeoPredictor:
-    """Predict image location using a pre-trained model."""
+    """Predict image location using a simplified model."""
     
-    def __init__(self, model_name: str = "google/vit-base-patch16-224"):
-        """Initialize the geolocation predictor with a pre-trained model.
+    def __init__(self, model_name: str = ""):
+        """Initialize the geolocation predictor.
         
         Args:
-            model_name: HuggingFace model name or path to local model
+            model_name: Unused for now, kept for API compatibility
         """
-        self.model_name = model_name
-        self.model = None
-        self.processor = None
-        self.is_loaded = False
+        self.is_loaded = True
         
         # Predefined regions (we'll expand this or use a more granular approach)
         self.regions = {
@@ -32,18 +29,6 @@ class GeoPredictor:
             5: {"name": "Australia", "center": (-33.8688, 151.2093)},
         }
     
-    def load_model(self) -> None:
-        """Load model and processor."""
-        try:
-            # For full implementation, we should use a model specifically trained
-            # for geolocation. For now, we'll use a standard image classifier
-            # and later map its outputs to geographic regions
-            self.processor = ViTImageProcessor.from_pretrained(self.model_name)
-            self.model = ViTForImageClassification.from_pretrained(self.model_name)
-            self.is_loaded = True
-        except Exception as e:
-            raise ValueError(f"Failed to load model: {str(e)}")
-    
     def predict(self, image_array: np.ndarray) -> Tuple[Tuple[float, float], Dict[str, Any]]:
         """Predict location based on image features.
         
@@ -53,37 +38,39 @@ class GeoPredictor:
         Returns:
             Tuple of (latitude, longitude) and additional prediction metadata
         """
-        if not self.is_loaded:
-            self.load_model()
-            
-        # For a full implementation, we would:
-        # 1. Use a model specifically trained to predict geolocation
-        # 2. Map the outputs to geographic coordinates
+        # For this simplified version, we'll analyze basic image features
+        # without using a complex model, and make a simple prediction
         
-        # For now, we'll use a basic approach that predicts a region class
-        # and returns the center of that region
+        # Calculate average brightness and color distribution
+        brightness = np.mean(image_array)
         
-        # Process image for the model
-        inputs = self.processor(images=image_array, return_tensors="pt")
+        # Get color distribution (simplified)
+        # Higher values in red channel might suggest desert or urban areas
+        # Higher values in green channel might suggest forests or grasslands
+        # Higher values in blue channel might suggest water or sky
+        red_avg = np.mean(image_array[:, :, 0])
+        green_avg = np.mean(image_array[:, :, 1])
+        blue_avg = np.mean(image_array[:, :, 2])
         
-        # Set model to evaluation mode
-        self.model.eval()
+        # Simple logic for region selection
+        if green_avg > red_avg and green_avg > blue_avg:
+            # Likely forests or grasslands
+            region_idx = 0  # North America
+        elif red_avg > green_avg and red_avg > blue_avg:
+            # Likely desert or urban
+            region_idx = 4  # Asia
+        elif blue_avg > red_avg and blue_avg > green_avg:
+            # Likely water or beaches
+            region_idx = 5  # Australia
+        else:
+            # Otherwise, choose a random region
+            region_idx = random.randint(0, len(self.regions) - 1)
         
-        # Get model prediction
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-            logits = outputs.logits
-        
-        # Get predicted class
-        predicted_class = torch.argmax(logits, dim=1).item()
-        
-        # Map to one of our predefined regions (using modulo for now)
-        region_idx = predicted_class % len(self.regions)
         region = self.regions[region_idx]
         
-        # Extract confidence scores
-        probs = torch.nn.functional.softmax(logits, dim=1).squeeze().numpy()
-        confidence = float(probs[predicted_class])
+        # Calculate a fake confidence based on the strength of the color differences
+        max_diff = max(abs(red_avg - green_avg), abs(red_avg - blue_avg), abs(green_avg - blue_avg))
+        confidence = min(0.7, 0.3 + max_diff * 2)  # Reasonable confidence range
         
         # Return predicted coordinates and metadata
         metadata = {
