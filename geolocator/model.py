@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from transformers import TFAutoModelForImageClassification, AutoImageProcessor
+from transformers import TFViTForImageClassification, ViTImageProcessor
 
 # Ensure TensorFlow can see the Metal plugin
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
@@ -13,7 +13,7 @@ os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 class GeoPredictor:
     """Predict image location using a pre-trained model."""
     
-    def __init__(self, model_name: str = "microsoft/resnet-50"):
+    def __init__(self, model_name: str = "google/vit-base-patch16-224"):
         """Initialize the geolocation predictor with a pre-trained model.
         
         Args:
@@ -40,8 +40,8 @@ class GeoPredictor:
             # For full implementation, we should use a model specifically trained
             # for geolocation. For now, we'll use a standard image classifier
             # and later map its outputs to geographic regions
-            self.processor = AutoImageProcessor.from_pretrained(self.model_name)
-            self.model = TFAutoModelForImageClassification.from_pretrained(self.model_name)
+            self.processor = ViTImageProcessor.from_pretrained(self.model_name)
+            self.model = TFViTForImageClassification.from_pretrained(self.model_name)
             self.is_loaded = True
         except Exception as e:
             raise ValueError(f"Failed to load model: {str(e)}")
